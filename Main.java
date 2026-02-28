@@ -11,8 +11,10 @@ import java.util.List;
 public class Main extends Application{
     //Particle demoParticle=new Particle(400+350, 300, -1, 20, 200,0,0);
     List<Particle> particles=new ArrayList<>();
-    Particle BlackHole=new Particle(400,300,0,0,1000_0,0,0);
+    Particle BlackHole=new Particle(400,300,0,0,1000_0000,0,0);
     double EventHorizon=40;
+    double startX;
+    double startY;
     public void start(Stage stage){
         Canvas canvas=new Canvas(800,600);
         GraphicsContext gc=canvas.getGraphicsContext2D();
@@ -23,17 +25,22 @@ public class Main extends Application{
         stage.show();
         int count=100;
         double spawnRadius=250;
+        
+        scene.setOnMousePressed(e -> {
+             startX = e.getX();
+             startY = e.getY();
+        });
 
-        for(int i=0;i<count;i++){
-            double angle = Math.random()*2*Math.PI;
-            double r=spawnRadius+Math.random()*30;
-            double x=BlackHole.x+r*Math.cos(angle);
-            double y=BlackHole.y+r*Math.sin(angle);
-            double speed=Math.sqrt(BlackHole.mass/r);
-            double vx=-speed * Math.sin(angle);
-            double vy=speed*Math.cos(angle);
-            particles.add(new Particle(x,y,vx,vy,100,0,0));
-        }
+        scene.setOnMouseReleased(e -> {
+
+            double endX = e.getX();
+            double endY = e.getY();
+
+             double vx = -((endX - startX) * 0.5);
+            double vy = -((endY - startY) * 0.5);
+            double mass=Math.random()*100+50;
+            particles.add(new Particle(startX, startY, vx, vy,mass, 0, 0));
+            });
         new AnimationTimer() {
             long lastTime=0;
             public void handle(long now){
@@ -41,7 +48,7 @@ public class Main extends Application{
                     lastTime=now;
                     return;
                 }
-                double dt=(now - lastTime) / 1_000_000_000.0;
+                double dt=(now - lastTime) / 10_000_000_00.0;
                 lastTime=now;
                 update(dt);
                 //collisionHandle(demoParticle,demoParticle.x, demoParticle.y);
@@ -59,9 +66,17 @@ public class Main extends Application{
     // Black hole gravity
     for (Particle p : particles) {
         if (!p.alive) continue;
+        double dx = p.x - BlackHole.x;
+        double dy = p.y - BlackHole.y;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        if(distance<EventHorizon){
+            p.alive=false;
+            continue;
+    }
         p.applyGravity(BlackHole,dt);
     }
-
+   
     // Particle-particle gravity
     for (int i = 0; i < particles.size(); i++) {
 
@@ -116,10 +131,10 @@ public class Main extends Application{
         gc.setFill(Color.BLACK);
         gc.fillRect(0,0,800,600);
         gc.setFill(Color.DARKGRAY);
-        gc.fillOval(BlackHole.x-15,BlackHole.y-15,40,40);
+        gc.fillOval(BlackHole.x-EventHorizon,BlackHole.y-EventHorizon,2*EventHorizon,2*EventHorizon);
         gc.setFill(Color.WHITE);
         for(Particle p:particles){
-            if(!p.alive)return;
+            if(!p.alive) continue;
             gc.fillOval(p.x,p.y,4,4);
         }
 
